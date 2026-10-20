@@ -197,3 +197,5 @@ Refer to **[`docs/demo_script.md`](docs/demo_script.md)** for the full word-for-
 ## 📄 License
 
 This project is licensed under the MIT License — open-source, free-tier accessible, and educational.
+#   C a r e e r K i t - A I  
+ 
