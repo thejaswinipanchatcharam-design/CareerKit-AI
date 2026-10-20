@@ -79,9 +79,9 @@ def _call_gemini(
     temperature: float,
     allow_mock_fallback: bool
 ) -> Dict[str, Any]:
-    """Invokes Google Gemini API via official google-genai SDK."""
+    """Invokes Google Gemini API via official google-genai SDK with automatic retry and model fallback."""
     api_key = Config.GEMINI_API_KEY
-    model_name = Config.GEMINI_MODEL or "gemini-2.5-flash"
+    primary_model = Config.GEMINI_MODEL or "gemini-3.8-flash"
 
     # Handle missing API key
     if not api_key:
@@ -95,7 +95,7 @@ def _call_gemini(
             "success": False,
             "content": "",
             "provider": "gemini",
-            "model": model_name,
+            "model": primary_model,
             "error": "Google Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.",
             "error_type": "MISSING_API_KEY",
             "is_mock": False
@@ -116,32 +116,75 @@ def _call_gemini(
 
         config = types.GenerateContentConfig(**config_params)
 
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=config
-        )
+        # Build candidate models list: primary configured model followed by stable fallbacks
+        candidate_models = [primary_model]
+        for fallback in ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3-flash-preview"]:
+            if fallback not in candidate_models:
+                candidate_models.append(fallback)
 
-        if not response or not response.text:
-            return {
-                "success": False,
-                "content": "",
-                "provider": "gemini",
-                "model": model_name,
-                "error": "Gemini returned an empty response. The content may have triggered safety filters.",
-                "error_type": "EMPTY_RESPONSE",
-                "is_mock": False
-            }
+        last_error = None
+        for model_name in candidate_models:
+            # Try up to 2 attempts per candidate model for temporary 503 demand spikes
+            for attempt in range(2):
+                try:
+                    logger.info(f"Invoking Gemini model '{model_name}' (attempt {attempt + 1})...")
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=config
+                    )
 
-        return {
-            "success": True,
-            "content": response.text.strip(),
-            "provider": "gemini",
-            "model": model_name,
-            "error": None,
-            "error_type": None,
-            "is_mock": False
-        }
+                    if not response or not response.text:
+                        return {
+                            "success": False,
+                            "content": "",
+                            "provider": "gemini",
+                            "model": model_name,
+                            "error": "Gemini returned an empty response. The content may have triggered safety filters.",
+                            "error_type": "EMPTY_RESPONSE",
+                            "is_mock": False
+                        }
+
+                    return {
+                        "success": True,
+                        "content": response.text.strip(),
+                        "provider": "gemini",
+                        "model": model_name,
+                        "error": None,
+                        "error_type": None,
+                        "is_mock": False
+                    }
+
+                except Exception as e:
+                    err_msg_str = str(e)
+                    last_error = e
+
+                    if "401" in err_msg_str or "API_KEY_INVALID" in err_msg_str:
+                        # API key itself is invalid; no model will succeed
+                        raise e
+                    elif "503" in err_msg_str or "UNAVAILABLE" in err_msg_str:
+                        logger.warning(
+                            f"Model '{model_name}' 503 high demand (attempt {attempt + 1}). "
+                            "Backing off for 1.5s..."
+                        )
+                        time.sleep(1.5)
+                        continue
+                    elif "429" in err_msg_str or "RESOURCE_EXHAUSTED" in err_msg_str:
+                        logger.warning(
+                            f"Model '{model_name}' quota limit reached (429). "
+                            "Switching to next available candidate model..."
+                        )
+                        break
+                    elif "404" in err_msg_str or "NOT_FOUND" in err_msg_str:
+                        logger.warning(f"Model '{model_name}' not available (404). Switching to next fallback model...")
+                        break
+                    else:
+                        logger.warning(f"Model '{model_name}' error: {err_msg_str}. Trying next fallback...")
+                        break
+
+        # If all candidates exhausted, raise the last encountered exception
+        if last_error:
+            raise last_error
 
     except Exception as e:
         error_str = str(e)
@@ -154,8 +197,11 @@ def _call_gemini(
         elif "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
             err_msg = "Gemini API rate limit or quota exceeded. Please retry in a few moments."
             err_type = "RATE_LIMIT"
+        elif "503" in error_str or "UNAVAILABLE" in error_str:
+            err_msg = "Gemini API is temporarily experiencing high global demand. Please try again in a few moments."
+            err_type = "HIGH_DEMAND"
         elif "NOT_FOUND" in error_str or "404" in error_str:
-            err_msg = f"The specified Gemini model '{model_name}' was not found. Please verify the model name in .env."
+            err_msg = f"The specified Gemini model was not found. Please verify the model name in .env."
             err_type = "MODEL_NOT_FOUND"
         else:
             err_msg = f"Gemini API request failed: {error_str}"
@@ -171,7 +217,7 @@ def _call_gemini(
             "success": False,
             "content": "",
             "provider": "gemini",
-            "model": model_name,
+            "model": primary_model,
             "error": err_msg,
             "error_type": err_type,
             "is_mock": False
