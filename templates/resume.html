@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Studio | CareerKit AI{% endblock %}
+{% block page_title %}AI Resume Studio{% endblock %}
+
+{% block topbar_actions %}
+<div style="display: flex; gap: 0.5rem; align-items: center;">
+  {% if selected_candidate %}
+    <a href="{{ url_for('view_candidate', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+      &larr; Candidate Profile Hub
+    </a>
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+      🛡️ Claim Audits
+    </a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Candidate Selection Banner -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <form method="GET" action="{{ url_for('resume_studio') }}" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 280px;">
+      <label for="candidate_id" style="font-weight: 700; font-size: 0.9rem; white-space: nowrap;">
+        Active Candidate:
+      </label>
+      <select id="candidate_id" name="candidate_id" class="form-control" onchange="this.form.submit()" style="max-width: 420px;">
+        {% if candidates %}
+          {% for c in candidates %}
+            <option value="{{ c.id }}" {% if selected_candidate and selected_candidate.id == c.id %}selected{% endif %}>
+              {{ c.name }} &bull; {{ c.target_role }} (ID #{{ c.id }})
+            </option>
+          {% endfor %}
+        {% else %}
+          <option value="">No candidates available</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      {% if not candidates %}
+        <form method="POST" action="{{ url_for('seed_sample') }}" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm">✨ Load Demo Profile</button>
+        </form>
+        <a href="{{ url_for('new_candidate') }}" class="btn btn-primary btn-sm">+ New Candidate</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% if not selected_candidate %}
+  <!-- Empty State if no candidates exist -->
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">👥</div>
+      <h3 class="empty-title">Select or Create a Candidate Profile First</h3>
+      <p class="empty-desc">
+        CareerKit AI verifies all resume statements against a candidate's ground-truth profile. Please create a profile or load the sample profile to begin.
+      </p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <form method="POST" action="{{ url_for('seed_sample') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary">✨ Load Demo Profile (Aarav Sharma)</button>
+        </form>
+        <a href="{{ url_for('new_candidate') }}" class="btn btn-primary">Create Profile</a>
+      </div>
+    </div>
+  </div>
+{% else %}
+
+  <!-- Ingestion & Preview Grid -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Column 1: Ingestion Form -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">1. Ingest Resume Source</h3>
+          <p class="card-subtitle">Upload a document or paste existing resume text for {{ selected_candidate.name }}</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('ingest_resume') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+
+        <!-- Method Selection Toggle -->
+        <div class="form-group">
+          <label class="form-label">Resume Input Method</label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <button type="button" id="tabUploadBtn" class="btn btn-primary btn-sm" onclick="switchMethod('upload')">
+              📁 File Upload (PDF, DOCX, TXT)
+            </button>
+            <button type="button" id="tabManualBtn" class="btn btn-secondary btn-sm" onclick="switchMethod('manual')">
+              ✍️ Paste Resume Text
+            </button>
+          </div>
+          <input type="hidden" name="input_method" id="input_method" value="upload">
+        </div>
+
+        <!-- Section A: File Upload Container -->
+        <div id="uploadSection" style="margin-bottom: 1rem;">
+          <div style="border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; background-color: #fafbfc;">
+            <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">📄</div>
+            <label for="resume_file" style="cursor: pointer; display: block;">
+              <span style="color: var(--primary); font-weight: 700; text-decoration: underline;">Click to select file</span>
+              <span style="color: var(--text-muted);"> or drag and drop</span>
+            </label>
+            <input type="file" id="resume_file" name="resume_file" accept=".pdf,.docx,.txt" class="form-control" style="max-width: 320px; margin: 0.5rem auto;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Supported: <strong>PDF</strong>, <strong>DOCX</strong>, <strong>TXT</strong> &bull; Max: <strong>10 MB</strong>
+            </div>
+          </div>
+
+          <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 0.65rem; margin-top: 0.65rem; font-size: 0.75rem; color: #166534;">
+            <strong>ℹ️ OCR Notice:</strong> Scanned image-only PDFs without digital text layers require OCR and are not supported. If using a scanned image, please use the <em>Paste Resume Text</em> tab.
+          </div>
+        </div>
+
+        <!-- Section B: Manual Text Area Container -->
+        <div id="manualSection" style="display: none; margin-bottom: 1rem;">
+          <label class="form-label" for="manual_resume_text">Resume Raw Content</label>
+          <textarea id="manual_resume_text" name="manual_resume_text" class="form-control" rows="6" placeholder="Paste resume text here..." data-word-count-target="manualResumeCounter"></textarea>
+          <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.75rem; color: var(--text-muted);">
+            <span>Include genuine details to be aligned.</span>
+            <span id="manualResumeCounter">0 words</span>
+          </div>
+        </div>
+
+        <!-- Target Job Context -->
+        <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.65rem;">Target Job Specification (Reference Benchmarks)</h4>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="target_job_title">Target Role</label>
+              <input type="text" id="target_job_title" name="target_job_title" class="form-control" value="{{ selected_doc.target_job_title if selected_doc else selected_candidate.target_role }}" placeholder="e.g. Junior Full-Stack Engineer">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="target_company">Company (Optional)</label>
+              <input type="text" id="target_company" name="target_company" class="form-control" value="{{ selected_doc.target_company if selected_doc else '' }}" placeholder="e.g. CloudTech Systems">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="job_description">Job Description / Requirements</label>
+            <textarea id="job_description" name="job_description" class="form-control" rows="3" placeholder="Paste job requirements...">{{ selected_doc.job_description if selected_doc else '' }}</textarea>
+            <div class="form-help">
+              Job descriptions are reference data only and will never override candidate ground truth.
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+          <button type="submit" class="btn btn-secondary">
+            <span>📥</span> Ingest Resume
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Column 2: Ingested Resume & AI Trigger Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">2. Ingested Document Preview</h3>
+          <p class="card-subtitle">
+            {% if selected_doc %}
+              Source: <strong>{{ selected_doc.filename or 'Pasted Text' }}</strong> ({{ selected_doc.file_type|upper }})
+            {% else %}
+              No resume ingested yet
+            {% endif %}
+          </p>
+        </div>
+        {% if selected_doc %}
+          <span class="badge badge-neutral">Doc #{{ selected_doc.id }}</span>
+        {% endif %}
+      </div>
+
+      {% if selected_doc %}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; font-size: 0.775rem; color: var(--text-muted);">
+          <span>Ingested: {{ selected_doc.created_at[:16] }}</span>
+          <span>Length: {{ orig_readability.word_count }} words &bull; {{ orig_readability.char_count }} chars</span>
+        </div>
+
+        <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.85rem; max-height: 250px; overflow-y: auto; font-size: 0.8rem; font-family: monospace; white-space: pre-wrap; line-height: 1.45; margin-bottom: 1.25rem;">
+{{ selected_doc.raw_text }}
+        </div>
+
+        <!-- AI Improvement Action Form with Privacy Consent Gate -->
+        <div style="background-color: #f5f7ff; border: 1px solid var(--primary-border); border-radius: var(--radius-sm); padding: 1.25rem;">
+          <div style="font-weight: 700; color: var(--primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>✨</span> Ready to Improve with AI
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+            Generates ATS-optimized phrasing, groups technical skills, identifies missing job criteria, and extracts claims for audit.
+          </p>
+
+          <form method="POST" action="{{ url_for('improve_resume') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+            <input type="hidden" name="doc_id" value="{{ selected_doc.id }}">
+            <input type="hidden" name="target_job_title" value="{{ selected_doc.target_job_title or selected_candidate.target_role }}">
+            <input type="hidden" name="target_company" value="{{ selected_doc.target_company or '' }}">
+            <input type="hidden" name="job_description" value="{{ selected_doc.job_description or '' }}">
+
+            <!-- Mandatory Privacy Consent Checkbox -->
+            <div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.8rem;">
+              <input type="checkbox" id="user_consent" name="user_consent" value="1" required style="margin-top: 0.2rem;">
+              <label for="user_consent" style="cursor: pointer; color: var(--text-main);">
+                <strong>Candidate Consent:</strong> I agree to process my resume text using the configured AI provider ({{ provider_info.provider }}) under strict factuality guardrails.
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+              <span>✨</span> Run AI Resume Improvement
+            </button>
+          </form>
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 2.5rem 1rem;">
+          <div class="empty-icon" style="font-size: 2.5rem;">📄</div>
+          <h4 class="empty-title">No Resume Loaded Yet</h4>
+          <p class="empty-desc">
+            Use the form on the left to upload or paste a resume for {{ selected_candidate.name }}.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- BEFORE-AND-AFTER COMPARISON SECTION (Shown when selected_improved exists) -->
+  {% if selected_improved and selected_doc %}
+    <div class="card" style="border: 2px solid var(--primary-border); box-shadow: var(--shadow-md);">
+      <div class="card-header" style="background-color: #fafbfc; margin: -1.5rem -1.5rem 1.5rem -1.5rem; padding: 1.25rem 1.5rem; border-top-left-radius: var(--radius-md); border-top-right-radius: var(--radius-md);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h3 class="card-title" style="color: var(--primary);">Side-by-Side Comparison & Candidate Review</h3>
+            <span class="badge {% if selected_improved.status == 'accepted' %}badge-success{% elif selected_improved.status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+              {{ selected_improved.status|replace('_', ' ')|capitalize }}
+            </span>
+          </div>
+          <p class="card-subtitle">Compare original vs improved versions, review readability metrics, and edit directly.</p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <a href="{{ url_for('export_resume', doc_id=selected_improved.id, file_format='pdf') }}" class="btn btn-secondary btn-sm" title="Download ATS-ready PDF">
+            📄 Export PDF
+          </a>
+          <a href="{{ url_for('export_resume', doc_id=selected_improved.id, file_format='docx') }}" class="btn btn-secondary btn-sm" title="Download Word DOCX">
+            📝 Export DOCX
+          </a>
+          <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+            🛡️ Audit Claims
+          </a>
+        </div>
+      </div>
+
+      <!-- Heuristic Metrics Comparison Dashboard -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background-color: #fafbfc; padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Word Count</div>
+          <div style="font-size: 1.15rem; font-weight: 800;">
+            {{ orig_readability.word_count }} &rarr; <span style="color: var(--primary);">{{ imp_readability.word_count }}</span>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">
+            {% set diff = imp_readability.word_count - orig_readability.word_count %}
+            {% if diff > 0 %}+{{ diff }} words{% else %}{{ diff }} words{% endif %}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Avg Sentence Length</div>
+          <div style="font-size: 1.15rem; font-weight: 800;">
+            {{ orig_readability.avg_sentence_length }} &rarr; <span style="color: var(--primary);">{{ imp_readability.avg_sentence_length }}</span> w/s
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Target: 15-20 words for clarity</div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Job Keyword Alignment</div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: var(--success-text);">
+            {{ imp_readability.keyword_match_percentage }}% Match
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">{{ imp_readability.matched_keywords|length }} key terms found</div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Sections Complete</div>
+          <div style="font-size: 1.15rem; font-weight: 800;">
+            {{ imp_readability.detected_sections|length }} detected
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">
+            {% if imp_readability.missing_sections %}Missing: {{ imp_readability.missing_sections|join(', ') }}{% else %}All core sections present{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Panels -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <!-- Left: Original Resume Panel (Read-only) -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">Original Document (Preserved)</h4>
+            <span class="badge badge-neutral">{{ selected_doc.file_type|upper }}</span>
+          </div>
+          <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; height: 420px; overflow-y: auto; font-size: 0.825rem; font-family: monospace; white-space: pre-wrap; line-height: 1.45; color: var(--text-muted);">
+{{ selected_doc.raw_text }}
+          </div>
+        </div>
+
+        <!-- Right: AI-Improved Resume Panel (Fully Editable) -->
+        <div>
+          <form method="POST" action="{{ url_for('update_improved_resume') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="improved_id" value="{{ selected_improved.id }}">
+            <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+            <input type="hidden" name="doc_id" value="{{ selected_doc.id }}">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary);">Improved Version (Editable)</h4>
+              <span id="improvedCounter" style="font-size: 0.75rem; color: var(--text-muted);">Editable text</span>
+            </div>
+
+            <textarea name="improved_text" class="form-control" style="height: 420px; font-family: monospace; font-size: 0.825rem; line-height: 1.45; padding: 1rem; border-color: var(--primary-border);" data-word-count-target="improvedCounter">{{ selected_improved.improved_text }}</textarea>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem;">
+              <button type="submit" name="action_type" value="save" class="btn btn-secondary btn-sm">
+                💾 Save Manual Edits
+              </button>
+
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" name="action_type" value="reject" class="btn btn-danger btn-sm" data-confirm="Mark this improved resume version as rejected?">
+                  ✕ Reject Version
+                </button>
+                <button type="submit" name="action_type" value="accept" class="btn btn-primary btn-sm">
+                  ✓ Accept Version
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- AI Structured Findings Tabs -->
+      <div style="border-top: 1px solid var(--border); padding-top: 1.25rem; margin-top: 0.5rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem;">AI Factuality & Improvement Breakdown</h4>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+          <!-- Key Improvements -->
+          <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary); margin-bottom: 0.5rem;">
+              🚀 Key Improvements
+            </div>
+            <div style="font-size: 0.8rem; line-height: 1.5; white-space: pre-line;">
+              {{ selected_improved.key_improvements or 'Organizational enhancements applied.' }}
+            </div>
+          </div>
+
+          <!-- Skills to Highlight -->
+          <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--success-text); margin-bottom: 0.5rem;">
+              🎯 Skills to Highlight
+            </div>
+            <div style="font-size: 0.8rem; line-height: 1.5; white-space: pre-line;">
+              {{ selected_improved.skills_to_highlight or 'Grounded skills aligned with job target.' }}
+            </div>
+          </div>
+
+          <!-- Missing Information -->
+          <div style="background-color: #fffbeb; border: 1px solid var(--warning-border); border-radius: var(--radius-sm); padding: 1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--warning-text); margin-bottom: 0.5rem;">
+              ⚠️ Missing Information
+            </div>
+            <div style="font-size: 0.8rem; line-height: 1.5; white-space: pre-line; color: #78350f;">
+              {{ selected_improved.missing_information or 'No missing requirements flagged.' }}
+            </div>
+          </div>
+
+          <!-- Facts to Verify -->
+          <div style="background-color: #fef2f2; border: 1px solid var(--danger-border); border-radius: var(--radius-sm); padding: 1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--danger-text); margin-bottom: 0.5rem;">
+              🛡️ Facts to Verify
+            </div>
+            <div style="font-size: 0.8rem; line-height: 1.5; white-space: pre-line; color: #991b1b;">
+              {{ selected_improved.facts_to_verify or 'Candidate must verify all dates and metrics.' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function switchMethod(method) {
+  const uploadSec = document.getElementById('uploadSection');
+  const manualSec = document.getElementById('manualSection');
+  const uploadBtn = document.getElementById('tabUploadBtn');
+  const manualBtn = document.getElementById('tabManualBtn');
+  const inputMethodField = document.getElementById('input_method');
+
+  if (method === 'upload') {
+    uploadSec.style.display = 'block';
+    manualSec.style.display = 'none';
+    uploadBtn.className = 'btn btn-primary btn-sm';
+    manualBtn.className = 'btn btn-secondary btn-sm';
+    inputMethodField.value = 'upload';
+  } else {
+    uploadSec.style.display = 'none';
+    manualSec.style.display = 'block';
+    uploadBtn.className = 'btn btn-secondary btn-sm';
+    manualBtn.className = 'btn btn-primary btn-sm';
+    inputMethodField.value = 'manual';
+  }
+}
+</script>
+{% endblock %}

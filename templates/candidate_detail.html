@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}{{ candidate.name }} - Profile Hub | CareerKit AI{% endblock %}
+{% block page_title %}{{ candidate.name }} &bull; Profile Hub{% endblock %}
+
+{% block topbar_actions %}
+<div style="display: flex; gap: 0.5rem; align-items: center;">
+  <a href="{{ url_for('edit_candidate', candidate_id=candidate.id) }}" class="btn btn-secondary btn-sm">Edit Details</a>
+  <a href="{{ url_for('resume_studio') }}?candidate_id={{ candidate.id }}" class="btn btn-primary btn-sm">
+    <span>📄</span> Open Resume Studio
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+  <!-- Left Column: Ground Truth Candidate Facts -->
+  <div>
+    <!-- Ground Truth Profile Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">{{ candidate.name }}</h3>
+          <p class="card-subtitle">Target Role: <strong>{{ candidate.target_role }}</strong></p>
+        </div>
+        <span class="badge badge-neutral">Candidate #{{ candidate.id }}</span>
+      </div>
+
+      <!-- Contact Information -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; background-color: #fafbfc; padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Email</div>
+          <div style="font-size: 0.875rem;">{{ candidate.email or 'Not provided' }}</div>
+        </div>
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Phone</div>
+          <div style="font-size: 0.875rem;">{{ candidate.phone or 'Not provided' }}</div>
+        </div>
+        <div>
+          <div style="font-size: 0.725rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Location</div>
+          <div style="font-size: 0.875rem;">{{ candidate.location or 'Not provided' }}</div>
+        </div>
+      </div>
+
+      <!-- Education Section -->
+      <div style="margin-bottom: 1.25rem;">
+        <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">Education (Ground Truth)</h4>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">{{ candidate.education }}</div>
+        {% if candidate.graduation_year %}
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Expected / Completed Graduation: {{ candidate.graduation_year }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Verified Skills -->
+      <div style="margin-bottom: 1.25rem;">
+        <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">Verified Skills</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+          {% for sk in candidate.skills.split(',') %}
+            <span class="badge badge-neutral">{{ sk.strip() }}</span>
+          {% endfor %}
+        </div>
+        <div class="form-help">Only skills listed here can be asserted by AI without requiring explicit candidate confirmation.</div>
+      </div>
+
+      <!-- Genuine Projects -->
+      {% if candidate.projects %}
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">Academic & Personal Projects</h4>
+          <div style="font-size: 0.875rem; white-space: pre-line; line-height: 1.6; background-color: #fafbfc; padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            {{ candidate.projects }}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Work & Internship Experience -->
+      {% if candidate.experience %}
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">Work & Internship Experience</h4>
+          <div style="font-size: 0.875rem; white-space: pre-line; line-height: 1.6; background-color: #fafbfc; padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            {{ candidate.experience }}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Summary -->
+      {% if candidate.summary %}
+        <div>
+          <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">Professional Summary</h4>
+          <p style="font-size: 0.875rem; color: var(--text-muted); font-style: italic;">
+            "{{ candidate.summary }}"
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Application Materials Tied to this Candidate -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Generated Application Documents</h3>
+          <p class="card-subtitle">Version history of resumes, cover letters, and web portfolios</p>
+        </div>
+      </div>
+
+      <!-- Resumes Sub-section -->
+      <div style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.9rem; font-weight: 700;">Resumes ({{ summary.improved_documents|length }} improved / {{ summary.original_documents|length }} source)</h4>
+          <a href="{{ url_for('resume_studio') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">+ Add Resume</a>
+        </div>
+
+        {% if summary.improved_documents or summary.original_documents %}
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for imp in summary.improved_documents %}
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                <div>
+                  <strong>AI Enhanced Resume</strong>
+                  <span class="badge {% if imp.status == 'accepted' %}badge-success{% elif imp.status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}" style="margin-left: 0.35rem;">
+                    {{ imp.status }}
+                  </span>
+                  <div style="font-size: 0.75rem; color: var(--text-light);">Generated: {{ imp.created_at[:16] }}</div>
+                </div>
+                <a href="{{ url_for('resume_studio') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">Inspect</a>
+              </div>
+            {% endfor %}
+            {% for orig in summary.original_documents %}
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background-color: #fafbfc;">
+                <div>
+                  <span style="font-size: 0.85rem; color: var(--text-main);">Original: {{ orig.filename or 'Pasted Resume Text' }}</span>
+                  <span class="badge badge-neutral" style="margin-left: 0.35rem;">{{ orig.file_type }}</span>
+                  <div style="font-size: 0.75rem; color: var(--text-light);">Ingested: {{ orig.created_at[:16] }}</div>
+                </div>
+                <a href="{{ url_for('resume_studio') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">View Source</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No resumes stored yet for this candidate.</p>
+        {% endif %}
+      </div>
+
+      <!-- Cover Letters Sub-section -->
+      <div style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.9rem; font-weight: 700;">Cover Letters ({{ summary.cover_letters|length }})</h4>
+          <a href="{{ url_for('cover_letter') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">+ Draft Letter</a>
+        </div>
+
+        {% if summary.cover_letters %}
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for cl in summary.cover_letters %}
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                <div>
+                  <strong>{{ cl.company_name }}</strong> &bull; {{ cl.target_role }}
+                  <span class="badge badge-neutral" style="margin-left: 0.35rem;">{{ cl.tone }}</span>
+                  <div style="font-size: 0.75rem; color: var(--text-light);">Created: {{ cl.created_at[:16] }}</div>
+                </div>
+                <a href="{{ url_for('cover_letter') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">Inspect</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No cover letters generated yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- Portfolios Sub-section -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.9rem; font-weight: 700;">One-Page Portfolios ({{ summary.portfolios|length }})</h4>
+          <a href="{{ url_for('portfolio') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">+ Build Portfolio</a>
+        </div>
+
+        {% if summary.portfolios %}
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for port in summary.portfolios %}
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                <div>
+                  <strong>{{ port.headline or candidate.target_role }}</strong>
+                  <div style="font-size: 0.75rem; color: var(--text-light);">Updated: {{ port.updated_at[:16] }}</div>
+                </div>
+                <a href="{{ url_for('portfolio') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm">View Portfolio</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No web portfolio generated yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Quick Launch Actions & Audit Card -->
+  <div>
+    <!-- Launchpad Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Application Actions</h3>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <a href="{{ url_for('resume_studio') }}?candidate_id={{ candidate.id }}" class="btn btn-primary" style="justify-content: flex-start;">
+          <span>📄</span> Resume Studio
+        </a>
+        <a href="{{ url_for('cover_letter') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary" style="justify-content: flex-start;">
+          <span>✉️</span> Generate Cover Letter
+        </a>
+        <a href="{{ url_for('portfolio') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary" style="justify-content: flex-start;">
+          <span>🌐</span> Build One-Page Portfolio
+        </a>
+        <a href="{{ url_for('verification') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary" style="justify-content: flex-start;">
+          <span>🛡️</span> Audit Claim Verification
+        </a>
+      </div>
+    </div>
+
+    <!-- Claim Verification Status Breakdown Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Factuality Audit</h3>
+          <p class="card-subtitle">Claim verification status for this profile</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <span>✅ Supported by info</span>
+          <span class="badge badge-success">{{ summary.claim_counts.supported }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <span>❓ Needs confirmation</span>
+          <span class="badge badge-warning">{{ summary.claim_counts.needs_confirmation }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <span>⚠️ Unsupported</span>
+          <span class="badge badge-danger">{{ summary.claim_counts.unsupported }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <span>🚫 Contradiction</span>
+          <span class="badge badge-danger">{{ summary.claim_counts.contradiction }}</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+        <a href="{{ url_for('verification') }}?candidate_id={{ candidate.id }}" class="btn btn-secondary btn-sm" style="width: 100%;">
+          Review All Claims
+        </a>
+      </div>
+    </div>
+
+    <!-- Danger Zone Card -->
+    <div class="card" style="border-color: var(--danger-border); background-color: #fffafb;">
+      <div class="card-header" style="border-bottom-color: var(--danger-border);">
+        <h3 class="card-title" style="color: var(--danger); font-size: 0.95rem;">Danger Zone</h3>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Permanently delete this candidate profile and cascade-delete all linked resumes, cover letters, portfolios, and claim verification audits.
+      </p>
+      <form method="POST" action="{{ url_for('delete_candidate_route', candidate_id=candidate.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;" data-confirm="Are you sure you want to permanently delete {{ candidate.name }}? This action cannot be undone.">
+          Delete Candidate & Cascade
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

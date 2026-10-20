@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Cover Letter Generator | CareerKit AI{% endblock %}
+{% block page_title %}Job-Specific Cover Letter Studio{% endblock %}
+
+{% block topbar_actions %}
+<div style="display: flex; gap: 0.5rem; align-items: center;">
+  {% if selected_candidate %}
+    <a href="{{ url_for('view_candidate', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+      &larr; Candidate Profile Hub
+    </a>
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+      🛡️ Claim Audits
+    </a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Candidate Selection Banner -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <form method="GET" action="{{ url_for('cover_letter') }}" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 280px;">
+      <label for="candidate_id" style="font-weight: 700; font-size: 0.9rem; white-space: nowrap;">
+        Active Candidate:
+      </label>
+      <select id="candidate_id" name="candidate_id" class="form-control" onchange="this.form.submit()" style="max-width: 420px;">
+        {% if candidates %}
+          {% for c in candidates %}
+            <option value="{{ c.id }}" {% if selected_candidate and selected_candidate.id == c.id %}selected{% endif %}>
+              {{ c.name }} &bull; {{ c.target_role }} (ID #{{ c.id }})
+            </option>
+          {% endfor %}
+        {% else %}
+          <option value="">No candidates available</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      {% if not candidates %}
+        <form method="POST" action="{{ url_for('seed_sample') }}" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm">✨ Load Demo Profile</button>
+        </form>
+        <a href="{{ url_for('new_candidate') }}" class="btn btn-primary btn-sm">+ New Candidate</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% if not selected_candidate %}
+  <!-- Empty State if no candidates exist -->
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">✉️</div>
+      <h3 class="empty-title">Select or Create a Candidate Profile First</h3>
+      <p class="empty-desc">
+        CareerKit AI generates tailored cover letters strictly matching verified ground-truth skills and projects.
+        Please create or select a candidate profile to begin.
+      </p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <form method="POST" action="{{ url_for('seed_sample') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary">✨ Load Demo Profile (Aarav Sharma)</button>
+        </form>
+        <a href="{{ url_for('new_candidate') }}" class="btn btn-primary">Create Profile</a>
+      </div>
+    </div>
+  </div>
+{% else %}
+
+  <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; align-items: start;">
+    <!-- Column 1: Tailored Generation Form -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">1. Target Job & Company Context</h3>
+          <p class="card-subtitle">Align {{ selected_candidate.name }}'s true skills with employer requirements.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('generate_cover_letter_route') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+
+        <div class="form-group">
+          <label class="form-label" for="company_name">Company Name <span style="color: var(--danger-text);">*</span></label>
+          <input type="text" id="company_name" name="company_name" class="form-control" placeholder="e.g. Google, CloudTech Systems, Razorpay" required value="{{ selected_letter.company_name if selected_letter else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="target_role">Target Job Title <span style="color: var(--danger-text);">*</span></label>
+          <input type="text" id="target_role" name="target_role" class="form-control" placeholder="e.g. Junior Full-Stack Engineer" required value="{{ selected_letter.target_role if selected_letter else selected_candidate.target_role }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_description">Job Description / Specific Requirements</label>
+          <textarea id="job_description" name="job_description" class="form-control" rows="4" placeholder="Paste job requirements or key responsibilities here...">{{ selected_letter.job_description if selected_letter else '' }}</textarea>
+          <div class="form-help">
+            Requirements will be matched against candidate ground truth without hallucinating unlisted skills.
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="tone">Letter Tone</label>
+            <select id="tone" name="tone" class="form-control">
+              <option value="professional" {% if selected_letter and selected_letter.tone == 'professional' %}selected{% endif %}>Professional & Direct</option>
+              <option value="confident" {% if selected_letter and selected_letter.tone == 'confident' %}selected{% endif %}>Confident & Proactive</option>
+              <option value="academic" {% if selected_letter and selected_letter.tone == 'academic' %}selected{% endif %}>Early Career / Academic</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="candidate_notes">Key Focus (Optional)</label>
+            <input type="text" id="candidate_notes" name="candidate_notes" class="form-control" placeholder="e.g. Emphasize Placement Portal project">
+          </div>
+        </div>
+
+        <!-- Privacy & AI Consent Gate -->
+        <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.85rem; margin-top: 0.5rem; margin-bottom: 1rem;">
+          <label style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.825rem; line-height: 1.4;">
+            <input type="checkbox" name="user_consent" id="user_consent" value="1" required style="margin-top: 0.2rem;">
+            <span>
+              <strong>Candidate Privacy Consent:</strong> I authorize processing candidate ground-truth profile data to generate a tailored cover letter. No unverified employers or false metrics will be fabricated.
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <span>✨</span> Generate Factual Cover Letter
+        </button>
+      </form>
+
+      <!-- History of Generated Letters -->
+      {% if letters %}
+        <div style="margin-top: 1.75rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">
+            Generated Letters ({{ letters|length }})
+          </h4>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for l in letters %}
+              <a href="{{ url_for('cover_letter', candidate_id=selected_candidate.id, letter_id=l.id) }}" style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.75rem; border: 1px solid {% if selected_letter and selected_letter.id == l.id %}var(--primary){% else %}var(--border){% endif %}; border-radius: var(--radius-sm); text-decoration: none; color: var(--text-dark); background-color: {% if selected_letter and selected_letter.id == l.id %}#eef2ff{% else %}#fff{% endif %}; font-size: 0.825rem;">
+                <div>
+                  <strong>{{ l.company_name }}</strong> &bull; <span style="color: var(--text-muted);">{{ l.target_role }}</span>
+                </div>
+                <span style="font-size: 0.725rem; color: var(--text-muted);">{{ l.created_at[:10] }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Column 2: Cover Letter Preview & Editor -->
+    <div class="card">
+      {% if selected_letter %}
+        <div class="card-header" style="align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h3 class="card-title">{{ selected_letter.company_name }}</h3>
+              <span class="badge badge-primary">{{ selected_letter.target_role }}</span>
+            </div>
+            <p class="card-subtitle">Tone: {{ selected_letter.tone|capitalize }} &bull; Generated {{ selected_letter.created_at[:10] }}</p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('export_cover_letter', letter_id=selected_letter.id, file_format='pdf') }}" class="btn btn-secondary btn-sm" title="Download Letter as PDF">
+              📄 Export PDF
+            </a>
+            <a href="{{ url_for('export_cover_letter', letter_id=selected_letter.id, file_format='docx') }}" class="btn btn-secondary btn-sm" title="Download Letter as Word DOCX">
+              📝 Export DOCX
+            </a>
+            <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm" title="Audit Cover Letter Claims">
+              🛡️ Audit
+            </a>
+          </div>
+        </div>
+
+        <!-- Editable Form for Cover Letter -->
+        <form method="POST" action="{{ url_for('edit_cover_letter_route', letter_id=selected_letter.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+
+          <div class="form-group">
+            <label class="form-label" for="full_content">Review and Edit Cover Letter Text</label>
+            <textarea id="full_content" name="full_content" class="form-control" rows="18" style="font-family: var(--font-sans); font-size: 0.9rem; line-height: 1.6;" data-word-count-target="letterWordCount">{{ selected_letter.full_content }}</textarea>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.75rem; color: var(--text-muted);">
+              <span>Ensure contact details, greeting, and sign-off accurately reflect candidate intentions.</span>
+              <span id="letterWordCount">0 words</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary btn-sm">
+              💾 Save Letter Edits
+            </button>
+          </div>
+        </form>
+
+      {% else %}
+        <!-- Empty State for Preview -->
+        <div class="empty-state" style="padding: 3rem 1rem;">
+          <div class="empty-icon">✉️</div>
+          <h3 class="empty-title">No Cover Letter Generated Yet</h3>
+          <p class="empty-desc">
+            Enter the target company and job details on the left, check the privacy consent, and click 
+            <strong>Generate Factual Cover Letter</strong>. CareerKit AI will build a personalized letter 
+            connecting {{ selected_candidate.name }}'s true skills to the role.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+{% endif %}
+{% endblock %}

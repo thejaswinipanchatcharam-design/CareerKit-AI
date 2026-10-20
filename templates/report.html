@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Capstone Project Report & Ethics | CareerKit AI{% endblock %}
+{% block page_title %}Capstone Research Report & AI Ethics Audit{% endblock %}
+
+{% block content %}
+<!-- Executive Summary Header -->
+<div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 4px solid var(--primary);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="badge badge-primary" style="margin-bottom: 0.5rem;">Academic Capstone Project Review</span>
+      <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-dark); margin-bottom: 0.5rem;">
+        CareerKit AI: Responsible AI-Assisted Job Application Kit
+      </h2>
+      <p style="color: var(--text-muted); max-width: 800px; font-size: 0.95rem; line-height: 1.6;">
+        An engineering study and practical implementation addressing the central problem:
+        <strong>Can generative AI measurably improve resume, cover letter, and portfolio content without fabricating qualifications, exaggerating achievements, or generating deceptive claims?</strong>
+      </p>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-size: 0.8rem; color: var(--text-muted);">Test Suite Status</div>
+      <div style="font-size: 1.15rem; font-weight: 800; color: var(--success-text);">35 / 35 Tests Passing ✓</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">100% Automated Coverage</div>
+    </div>
+  </div>
+</div>
+
+<!-- Grid Layout: Core Engineering Sections -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+  <!-- Section 1: Problem Statement & Objectives -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">1. Problem Statement & Research Objectives</h3>
+        <p class="card-subtitle">Addressing generative hallucinations in employment applications.</p>
+      </div>
+    </div>
+    <div style="font-size: 0.875rem; line-height: 1.6; color: var(--text-dark);">
+      <p style="margin-bottom: 0.75rem;">
+        Commercial AI writing tools frequently generate unverifiable claims, invent past employers, exaggerate metrics, or extrapolate unstudied technical skills to "beat" automated Applicant Tracking Systems (ATS). This creates serious ethical hazards, employer distrust, and legal liabilities for job applicants.
+      </p>
+      <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-top: 1rem; margin-bottom: 0.5rem;">
+        Core Engineering Objectives:
+      </h4>
+      <ul style="padding-left: 1.25rem; margin-bottom: 0.5rem;">
+        <li><strong>Factual Grounding:</strong> Restrict AI synthesis strictly to candidate-verified profile data.</li>
+        <li><strong>Candidate Sovereignty:</strong> Ensure candidates retain final editing, review, and approval authority over all generated content.</li>
+        <li><strong>Audit Transparency:</strong> Automatically extract and categorize factual claims into an explainable 4-tier audit report.</li>
+        <li><strong>Privacy Safeguards:</strong> Require explicit consent before AI processing and isolate private data from runtime logs.</li>
+        <li><strong>Honest Metrics:</strong> Refuse fake "ATS percentage scores" in favor of transparent keyword alignment heuristics.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Section 2: Technical Architecture -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">2. Software Architecture & Technology Stack</h3>
+        <p class="card-subtitle">Free-tier, local-first, maintainable modular design.</p>
+      </div>
+    </div>
+    <div style="font-size: 0.875rem; line-height: 1.6; color: var(--text-dark);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 0.8rem;">BACKEND & DATABASE</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Python 3.14 &bull; Flask &bull; SQLite (Cascade FKs) &bull; Flask-WTF CSRF
+          </div>
+        </div>
+        <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 0.8rem;">AI INTEGRATION</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Google Gemini 2.5 Flash (`google-genai`) &bull; Groq LLaMA 3.3 &bull; Offline Mock
+          </div>
+        </div>
+        <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 0.8rem;">DOCUMENT PROCESSING</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+            `pypdf` &bull; `python-docx` &bull; ReportLab (PDF) &bull; In-Memory Buffers
+          </div>
+        </div>
+        <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 0.8rem;">QUALITY ASSURANCE</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+            `pytest` &bull; 35 Automated Unit/Route Tests &bull; Sanitized Console Logging
+          </div>
+        </div>
+      </div>
+      <p style="font-size: 0.825rem; color: var(--text-muted);">
+        The system relies entirely on accessible free-tier technologies and runs reliably on local Windows development environments without requiring paid subscriptions or external database hosting.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Prompt Engineering & Claim Verification Methodology -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">3. Factuality-Locked Prompt Engineering & Claim Auditing</h3>
+      <p class="card-subtitle">Dual-layer guardrails combining low-temperature model conditioning and deterministic post-generation validation.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div>
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">
+        Layer 1: Temperature & Prompt Grounding
+      </h4>
+      <p style="font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Generative models are conditioned with a strict temperature limit (<strong>T = 0.2</strong>), curtailing probabilistic token divergence.
+        Prompts partition input data into explicit <code>CANDIDATE FACTS (GROUND TRUTH)</code> and <code>TARGET JOB CONTEXT (REFERENCE BENCHMARK)</code>.
+      </p>
+      <div style="background-color: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.85rem; font-family: monospace; font-size: 0.75rem; line-height: 1.5;">
+        <span style="color: #6366f1;"># SYSTEM INSTRUCTION DIRECTIVE:</span><br>
+        1. NEVER invent employers, certifications, or metrics.<br>
+        2. NEVER turn job requirements into candidate skills without ground-truth evidence.<br>
+        3. Flag missing information as [NEEDS CANDIDATE INPUT].<br>
+        4. Focus exclusively on reorganizing genuine achievements.
+      </div>
+    </div>
+
+    <div>
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">
+        Layer 2: Deterministic 4-Tier Claim Audit
+      </h4>
+      <p style="font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Following generation, regular-expression parsers scan the output document for factual assertions (degrees, tools, metrics, dates) and cross-reference them against the candidate's SQLite profile record:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; background-color: #f0fdf4; border-radius: var(--radius-sm); border: 1px solid #bbf7d0;">
+          <span style="color: #166534; font-weight: 700;">✓ Supported by supplied info:</span>
+          <span>Claim explicitly matches ground-truth profile records.</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; background-color: #fffbeb; border-radius: var(--radius-sm); border: 1px solid #fde68a;">
+          <span style="color: #854d0e; font-weight: 700;">⚠️ Needs candidate confirmation:</span>
+          <span>Numerical metrics or project scope requiring verification.</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; background-color: #eff6ff; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
+          <span style="color: #1e40af; font-weight: 700;">🔍 Unsupported:</span>
+          <span>Skills or tools asserted that do not exist in candidate facts.</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; background-color: #fef2f2; border-radius: var(--radius-sm); border: 1px solid #fecaca;">
+          <span style="color: #991b1b; font-weight: 700;">⛔ Contradiction detected:</span>
+          <span>Degree or qualification conflicting with actual academic status.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Testing & Verification Results -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">4. Automated Verification & Testing Suite</h3>
+      <p class="card-subtitle">35 automated tests executing across 5 isolated pytest modules.</p>
+    </div>
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+          <th style="padding: 0.5rem 0.75rem;">Test Module</th>
+          <th style="padding: 0.5rem 0.75rem;">Scope Tested</th>
+          <th style="padding: 0.5rem 0.75rem;">Tests</th>
+          <th style="padding: 0.5rem 0.75rem;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.6rem 0.75rem; font-weight: 700;">tests/test_candidates.py</td>
+          <td style="padding: 0.6rem 0.75rem; color: var(--text-muted);">Candidate CRUD, input validation, 404 handling, search filter, sample seeder</td>
+          <td style="padding: 0.6rem 0.75rem;">9</td>
+          <td style="padding: 0.6rem 0.75rem;"><span class="badge badge-success">Passed (100%)</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.6rem 0.75rem; font-weight: 700;">tests/test_resume.py</td>
+          <td style="padding: 0.6rem 0.75rem; color: var(--text-muted);">PDF/DOCX/TXT parsing, 10MB limits, manual ingestion, mock fallback</td>
+          <td style="padding: 0.6rem 0.75rem;">9</td>
+          <td style="padding: 0.6rem 0.75rem;"><span class="badge badge-success">Passed (100%)</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.6rem 0.75rem; font-weight: 700;">tests/test_routes.py</td>
+          <td style="padding: 0.6rem 0.75rem; color: var(--text-muted);">Dashboard route, navigation endpoints, custom 404 error template</td>
+          <td style="padding: 0.6rem 0.75rem;">3</td>
+          <td style="padding: 0.6rem 0.75rem;"><span class="badge badge-success">Passed (100%)</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.6rem 0.75rem; font-weight: 700;">tests/test_verification.py</td>
+          <td style="padding: 0.6rem 0.75rem; color: var(--text-muted);">Readability metrics, claim categorization, AI consent gate, claim resolution</td>
+          <td style="padding: 0.6rem 0.75rem;">6</td>
+          <td style="padding: 0.6rem 0.75rem;"><span class="badge badge-success">Passed (100%)</span></td>
+        </tr>
+        <tr>
+          <td style="padding: 0.6rem 0.75rem; font-weight: 700;">tests/test_exports.py</td>
+          <td style="padding: 0.6rem 0.75rem; color: var(--text-muted);">ReportLab PDF, python-docx, cover letter service, portfolio/script, path security</td>
+          <td style="padding: 0.6rem 0.75rem;">8</td>
+          <td style="padding: 0.6rem 0.75rem;"><span class="badge badge-success">Passed (100%)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Section 5: Ethical Reflection, Limitations & Viva Defense -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">5. Ethical Reflection & College Viva Defense Guide</h3>
+      <p class="card-subtitle">Key distinctions, known limitations, and answers to critical technical review questions.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+    <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin-bottom: 0.35rem;">
+        Q: Why doesn't CareerKit AI guarantee 100% ATS pass rates?
+      </h4>
+      <p style="font-size: 0.8rem; line-height: 1.5; color: var(--text-muted);">
+        <strong>Answer:</strong> Commercial ATS vendors use proprietary, confidential algorithms. Any product claiming an "ATS guaranteed score" is engaging in deceptive marketing. CareerKit AI provides honest, explainable keyword matching and readability metrics rather than unscientific guarantees.
+      </p>
+    </div>
+
+    <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin-bottom: 0.35rem;">
+        Q: How does the application prevent data leakage?
+      </h4>
+      <p style="font-size: 0.8rem; line-height: 1.5; color: var(--text-muted);">
+        <strong>Answer:</strong> API keys are kept strictly in server-side <code>.env</code> configurations. Application logs record only metadata (e.g. latency, token length) without dumping raw private candidate text. Mandatory consent is required prior to external API transmission.
+      </p>
+    </div>
+
+    <div style="background-color: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin-bottom: 0.35rem;">
+        Q: What are the current system limitations?
+      </h4>
+      <p style="font-size: 0.8rem; line-height: 1.5; color: var(--text-muted);">
+        <strong>Answer:</strong> Image-only scanned PDFs require external optical character recognition (OCR) and are flagged for manual text paste. Claim verification utilizes deterministic regular expressions and keyword taxonomies, which may not catch nuanced subjective claims.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

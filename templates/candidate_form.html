@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{% if candidate %}Edit Candidate{% else %}New Candidate{% endif %} | CareerKit AI{% endblock %}
+{% block page_title %}{% if candidate %}Edit Candidate Profile{% else %}Create Candidate Profile{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">{% if candidate %}Update Information for {{ candidate.name }}{% else %}Ground Truth Candidate Details{% endif %}</h3>
+      <p class="card-subtitle">All subsequent AI improvements, cover letters, and claims are fact-checked against this data.</p>
+    </div>
+  </div>
+
+  <form method="POST" action="{% if candidate and candidate.id %}{{ url_for('edit_candidate', candidate_id=candidate.id) }}{% else %}{{ url_for('new_candidate') }}{% endif %}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div class="form-group">
+        <label class="form-label" for="name">Candidate Full Name <span class="required">*</span></label>
+        <input type="text" id="name" name="name" class="form-control" required value="{{ candidate.name if candidate else '' }}" placeholder="e.g. Alex Morgan">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="target_role">Target Job Role <span class="required">*</span></label>
+        <input type="text" id="target_role" name="target_role" class="form-control" required value="{{ candidate.target_role if candidate else '' }}" placeholder="e.g. Junior Full-Stack Developer">
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address (Optional)</label>
+        <input type="email" id="email" name="email" class="form-control" value="{{ candidate.email if candidate else '' }}" placeholder="alex.morgan@example.com">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="phone">Phone (Optional)</label>
+        <input type="text" id="phone" name="phone" class="form-control" value="{{ candidate.phone if candidate else '' }}" placeholder="+1 555-0199">
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+      <div class="form-group">
+        <label class="form-label" for="education">Degree & Major <span class="required">*</span></label>
+        <input type="text" id="education" name="education" class="form-control" required value="{{ candidate.education if candidate else '' }}" placeholder="e.g. B.Tech in Computer Science and Engineering">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="graduation_year">Graduation Year</label>
+        <input type="text" id="graduation_year" name="graduation_year" class="form-control" value="{{ candidate.graduation_year if candidate else '' }}" placeholder="e.g. 2026">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="skills">Technical & Professional Skills <span class="required">*</span></label>
+      <textarea id="skills" name="skills" class="form-control" required rows="3" placeholder="e.g. Python, Flask, JavaScript, SQLite, Git, Docker, REST APIs">{{ candidate.skills if candidate else '' }}</textarea>
+      <div class="form-help">List only genuine, verifiable skills possessed by the candidate.</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="projects">Academic & Personal Projects</label>
+      <textarea id="projects" name="projects" class="form-control" rows="4" placeholder="e.g. 1. Smart Health Portal: Flask web app with SQLite; handled 1,000 synthetic patient records.&#10;2. Algorithmic Trading Bot: Python script with backtesting.">{{ candidate.projects if candidate else '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="experience">Work / Internship Experience</label>
+      <textarea id="experience" name="experience" class="form-control" rows="3" placeholder="e.g. Software Engineering Intern at Tech Corp (May 2025 - July 2025): Developed internal REST APIs and unit tests.">{{ candidate.experience if candidate else '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="summary">Professional Summary / Bio</label>
+      <textarea id="summary" name="summary" class="form-control" rows="3" placeholder="A brief 2-3 sentence overview of candidate goals and technical passions.">{{ candidate.summary if candidate else '' }}</textarea>
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+      <a href="{{ url_for('list_candidates') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        {% if candidate %}Save Profile Changes{% else %}Create Candidate Profile{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

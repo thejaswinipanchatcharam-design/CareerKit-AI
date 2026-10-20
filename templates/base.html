@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}CareerKit AI - AI Job Application Kit{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="{{ url_for('dashboard') }}" class="brand-link">
+          <div class="brand-icon">CK</div>
+          <div class="brand-text">
+            <span class="brand-title">CareerKit AI</span>
+            <span class="brand-tagline">AI Job Application Kit</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <span class="nav-label">Core Modules</span>
+        <a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('list_candidates') }}" class="nav-link {% if active_page == 'candidates' %}active{% endif %}">
+          <span class="nav-icon">👥</span>
+          <span>Candidates</span>
+        </a>
+        <a href="{{ url_for('resume_studio') }}" class="nav-link {% if active_page == 'resume' %}active{% endif %}">
+          <span class="nav-icon">📄</span>
+          <span>Resume Studio</span>
+        </a>
+        <a href="{{ url_for('cover_letter') }}" class="nav-link {% if active_page == 'cover_letter' %}active{% endif %}">
+          <span class="nav-icon">✉️</span>
+          <span>Cover Letter</span>
+        </a>
+        <a href="{{ url_for('portfolio') }}" class="nav-link {% if active_page == 'portfolio' %}active{% endif %}">
+          <span class="nav-icon">🌐</span>
+          <span>Portfolio Builder</span>
+        </a>
+
+        <span class="nav-label" style="margin-top: 0.75rem;">Quality & Ethics</span>
+        <a href="{{ url_for('verification') }}" class="nav-link {% if active_page == 'verification' %}active{% endif %}">
+          <span class="nav-icon">🛡️</span>
+          <span>Claim Verification</span>
+        </a>
+        <a href="{{ url_for('project_report') }}" class="nav-link {% if active_page == 'report' %}active{% endif %}">
+          <span class="nav-icon">📑</span>
+          <span>Project Report</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="provider-badge">
+          <div>
+            <span class="provider-status-dot {% if provider_info.configured %}status-active{% else %}status-warning{% endif %}"></span>
+            <strong>{{ provider_info.provider }}</strong>
+          </div>
+          <span class="badge {% if provider_info.configured %}badge-success{% else %}badge-warning{% endif %}">
+            {% if provider_info.configured %}Ready{% else %}No Key{% endif %}
+          </span>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-light); margin-top: 0.4rem; text-align: center;">
+          Model: {{ provider_info.model }}
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="page-headline">
+          <button class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle navigation menu">
+            ☰
+          </button>
+          <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+        </div>
+
+        <div class="topbar-actions">
+          {% block topbar_actions %}
+          <a href="{{ url_for('new_candidate') }}" class="btn btn-primary btn-sm">
+            <span>+</span> New Candidate
+          </a>
+          {% endblock %}
+        </div>
+      </header>
+
+      <main class="content-area">
+        <!-- Flash Messages Container -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category in ['success', 'warning', 'danger', 'info'] else 'info' }}">
+                <span>{{ message }}</span>
+                <button type="button" class="alert-close" aria-label="Close notification">&times;</button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Child Page Content -->
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

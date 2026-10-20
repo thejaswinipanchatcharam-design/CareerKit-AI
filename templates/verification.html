@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Claim Verification & Audit | CareerKit AI{% endblock %}
+{% block page_title %}Claim Verification & Factuality Audit{% endblock %}
+
+{% block topbar_actions %}
+{% if selected_candidate %}
+  <a href="{{ url_for('view_candidate', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+    &larr; Candidate Profile Hub
+  </a>
+  <a href="{{ url_for('resume_studio', candidate_id=selected_candidate.id) }}" class="btn btn-primary btn-sm">
+    <span>📄</span> Resume Studio
+  </a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Candidate Selection Banner -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <form method="GET" action="{{ url_for('verification') }}" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 280px;">
+      <label for="candidate_id" style="font-weight: 700; font-size: 0.9rem; white-space: nowrap;">
+        Candidate Profile:
+      </label>
+      <select id="candidate_id" name="candidate_id" class="form-control" onchange="this.form.submit()" style="max-width: 420px;">
+        {% if candidates %}
+          {% for c in candidates %}
+            <option value="{{ c.id }}" {% if selected_candidate and selected_candidate.id == c.id %}selected{% endif %}>
+              {{ c.name }} &bull; {{ c.target_role }} (ID #{{ c.id }})
+            </option>
+          {% endfor %}
+        {% else %}
+          <option value="">No candidates available</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div style="font-size: 0.8rem; color: var(--text-muted);">
+      Ethical Rule: Claims are never marked true simply because AI phrased them well.
+    </div>
+  </form>
+</div>
+
+{% if not selected_candidate %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">🛡️</div>
+      <h3 class="empty-title">Select a Candidate to Audit Claims</h3>
+      <p class="empty-desc">
+        Please select a candidate profile to inspect audited claims across their resumes, cover letters, and portfolios.
+      </p>
+    </div>
+  </div>
+{% else %}
+
+  <!-- Audit Status Overview Cards -->
+  <div class="stats-grid" style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" style="text-decoration: none;">
+      <div class="stat-card" style="{% if not active_status_filter %}border-color: var(--primary);{% endif %}">
+        <div class="stat-icon purple">📋</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ counts.total }}</span>
+          <span class="stat-label">Total Claims Audited</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id, status='Supported by supplied info') }}" style="text-decoration: none;">
+      <div class="stat-card" style="{% if active_status_filter == 'Supported by supplied info' %}border-color: var(--success);{% endif %}">
+        <div class="stat-icon green">✅</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ counts.supported }}</span>
+          <span class="stat-label">Supported by Info</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id, status='Needs candidate confirmation') }}" style="text-decoration: none;">
+      <div class="stat-card" style="{% if active_status_filter == 'Needs candidate confirmation' %}border-color: var(--warning);{% endif %}">
+        <div class="stat-icon amber">❓</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ counts.needs_confirmation }}</span>
+          <span class="stat-label">Needs Confirmation</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id, status='Unsupported') }}" style="text-decoration: none;">
+      <div class="stat-card" style="{% if active_status_filter == 'Unsupported' %}border-color: var(--danger);{% endif %}">
+        <div class="stat-icon rose">⚠️</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ counts.unsupported }}</span>
+          <span class="stat-label">Unsupported Claims</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('verification', candidate_id=selected_candidate.id, status='Contradiction detected') }}" style="text-decoration: none;">
+      <div class="stat-card" style="{% if active_status_filter == 'Contradiction detected' %}border-color: var(--danger);{% endif %}">
+        <div class="stat-icon rose">🚫</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ counts.contradiction }}</span>
+          <span class="stat-label">Contradictions</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Claims List Card -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          Claim Audit Checklist
+          {% if active_status_filter %}
+            &bull; <span style="font-size: 0.9rem; color: var(--primary);">Filtered: {{ active_status_filter }}</span>
+          {% endif %}
+        </h3>
+        <p class="card-subtitle">
+          Compare each statement against candidate ground truth facts. Confirm accuracy or resolve flagged items.
+        </p>
+      </div>
+
+      {% if active_status_filter %}
+        <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" class="btn btn-secondary btn-sm">
+          Clear Status Filter
+        </a>
+      {% endif %}
+    </div>
+
+    {% if claims %}
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for c in claims %}
+          <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.15rem; background-color: {% if c.status == 'Contradiction detected' %}#fffafb{% elif c.status == 'Unsupported' %}#fffbf8{% elif c.status == 'Needs candidate confirmation' %}#fffdf5{% else %}#fcfdfd{% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div>
+                <span class="badge badge-neutral" style="text-transform: uppercase; font-size: 0.7rem; margin-right: 0.4rem;">
+                  {{ c.document_type }}
+                </span>
+
+                {% if c.status == 'Supported by supplied info' %}
+                  <span class="badge badge-success">✓ Supported by Supplied Info</span>
+                {% elif c.status == 'Needs candidate confirmation' %}
+                  <span class="badge badge-warning">? Needs Candidate Confirmation</span>
+                {% elif c.status == 'Unsupported' %}
+                  <span class="badge badge-danger">⚠️ Unsupported by Supplied Info</span>
+                {% elif c.status == 'Contradiction detected' %}
+                  <span class="badge badge-danger">🚫 Contradiction Detected</span>
+                {% endif %}
+
+                <span class="badge {% if c.candidate_resolution == 'confirmed' %}badge-success{% elif c.candidate_resolution == 'removed' %}badge-danger{% elif c.candidate_resolution == 'edited' %}badge-info{% else %}badge-neutral{% endif %}" style="margin-left: 0.4rem;">
+                  Resolution: {{ c.candidate_resolution|capitalize }}
+                </span>
+              </div>
+
+              <div style="font-size: 0.75rem; color: var(--text-light);">
+                Audit ID: #{{ c.id }} &bull; {{ c.created_at[:16] }}
+              </div>
+            </div>
+
+            <!-- Claim Content -->
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+              {{ c.claim_text }}
+            </div>
+
+            <!-- Reason & Supporting Evidence Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.825rem; margin-bottom: 0.75rem; background-color: rgba(255,255,255,0.7); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <div>
+                <strong style="color: var(--text-muted); display: block; font-size: 0.75rem; text-transform: uppercase;">Audit Findings & Reason:</strong>
+                <span>{{ c.reason or 'No specific discrepancies found.' }}</span>
+              </div>
+              <div>
+                <strong style="color: var(--text-muted); display: block; font-size: 0.75rem; text-transform: uppercase;">Candidate Ground-Truth Evidence:</strong>
+                <span>{{ c.supporting_info or 'No matching evidence in profile record.' }}</span>
+              </div>
+            </div>
+
+            <!-- Suggested Action & Candidate Resolution Form -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.75rem; font-size: 0.8rem;">
+              <div>
+                <strong style="color: var(--primary);">Suggested Action:</strong> {{ c.suggested_action or 'Review and verify.' }}
+              </div>
+
+              <!-- Interactive Resolution Controls -->
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <form method="POST" action="{{ url_for('resolve_claim', record_id=c.id) }}" style="display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+                  <input type="hidden" name="resolution" value="confirmed">
+                  <button type="submit" class="btn btn-secondary btn-sm" style="{% if c.candidate_resolution == 'confirmed' %}background-color: var(--success-bg); border-color: var(--success-border); color: var(--success-text); font-weight: 700;{% endif %}">
+                    ✓ Confirm Claim
+                  </button>
+                </form>
+
+                <form method="POST" action="{{ url_for('resolve_claim', record_id=c.id) }}" style="display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+                  <input type="hidden" name="resolution" value="removed">
+                  <button type="submit" class="btn btn-secondary btn-sm" style="{% if c.candidate_resolution == 'removed' %}background-color: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); font-weight: 700;{% endif %}">
+                    ✕ Mark Removed
+                  </button>
+                </form>
+
+                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEditClaim('{{ c.id }}')">
+                  ✎ Edit Text
+                </button>
+              </div>
+            </div>
+
+            <!-- Inline Edit Form Drawer (Hidden by default) -->
+            <div id="editClaimBox_{{ c.id }}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
+              <form method="POST" action="{{ url_for('resolve_claim', record_id=c.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="candidate_id" value="{{ selected_candidate.id }}">
+                <input type="hidden" name="resolution" value="edited">
+
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                  <label class="form-label" style="font-size: 0.8rem;">Refine Claim Statement to Match True Experience:</label>
+                  <input type="text" name="claim_text" class="form-control" value="{{ c.claim_text }}" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEditClaim('{{ c.id }}')">Cancel</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Save Edited Claim</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding: 3rem 1rem;">
+        <div class="empty-icon">🛡️</div>
+        <h4 class="empty-title">
+          {% if active_status_filter %}No claims matching status '{{ active_status_filter }}'{% else %}No Claims Audited Yet{% endif %}
+        </h4>
+        <p class="empty-desc">
+          {% if active_status_filter %}
+            Try clearing the filter or selecting another status category.
+          {% else %}
+            Generate or improve a resume in the Resume Studio to automatically extract and audit factual claims.
+          {% endif %}
+        </p>
+        {% if active_status_filter %}
+          <a href="{{ url_for('verification', candidate_id=selected_candidate.id) }}" class="btn btn-secondary">Clear Filter</a>
+        {% else %}
+          <a href="{{ url_for('resume_studio', candidate_id=selected_candidate.id) }}" class="btn btn-primary">Go to Resume Studio</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleEditClaim(claimId) {
+  const box = document.getElementById('editClaimBox_' + claimId);
+  if (box) {
+    box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
+  }
+}
+</script>
+{% endblock %}
