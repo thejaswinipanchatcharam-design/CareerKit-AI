@@ -33,7 +33,7 @@ CareerKit AI is an AI-powered web application that helps candidates enhance thei
 
 1. Clone the repository
 git clone https://github.com/thejaswinipanchatcharam-design/CareerKit-AI.git
-cd CareerKit-AI
+
 
 2. Create and activate a virtual environment
 python -m venv venv
