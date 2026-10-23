@@ -1,9 +1,9 @@
-<img width="4032" height="594" alt="image" src="https://github.com/user-attachments/assets/8f71e1de-10c6-4048-a322-0df8c2c1b5fa" />**💼 CareerKit AI**
+**💼 CareerKit AI**
 **AI-Powered Job Application & Career Portfolio Kit**
 
 CareerKit AI is an AI-powered web application that helps candidates enhance their resumes, write tailored cover letters, build web portfolios, and generate video pitch scripts without fabricating false skills or experiences.
 
-✨ Features
+**✨ Features**
 - AI Resume Studio: Upload resumes (PDF, DOCX, TXT) or paste text to improve structure and impact.
 - Claim Verification: Automatically cross-checks resume statements against verified candidate facts.
 - Tailored Cover Letters: Generates job-specific cover letters matched to job descriptions.
